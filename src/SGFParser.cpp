@@ -1,6 +1,6 @@
 /*
     This file is part of Leela Zero.
-    Copyright (C) 2017 Gian-Carlo Pascutto
+    Copyright (C) 2017-2019 Gian-Carlo Pascutto and contributors
 
     Leela Zero is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -14,19 +14,29 @@
 
     You should have received a copy of the GNU General Public License
     along with Leela Zero.  If not, see <http://www.gnu.org/licenses/>.
+
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this Program, or any covered work, by linking or
+    combining it with NVIDIA Corporation's libraries from the
+    NVIDIA CUDA Toolkit and/or the NVIDIA CUDA Deep Neural
+    Network library and/or the NVIDIA TensorRT inference library
+    (or a modified version of those libraries), containing parts covered
+    by the terms of the respective license agreement, the licensors of
+    this Program grant you additional permission to convey the resulting
+    work.
 */
 
-#include <cassert>
-#include <iostream>
-#include <fstream>
-#include <iomanip>
-#include <cctype>
-#include <string>
-#include <memory>
-#include <stdexcept>
-
-#include "Utils.h"
 #include "SGFParser.h"
+
+#include <cassert>
+#include <cctype>
+#include <fstream>
+#include <stdexcept>
+#include <string>
+
+#include "SGFTree.h"
+#include "Utils.h"
 
 std::vector<std::string> SGFParser::chop_stream(std::istream& ins,
                                                 size_t stopat) {
@@ -58,7 +68,7 @@ std::vector<std::string> SGFParser::chop_stream(std::istream& ins,
                 // eat ; too
                 do {
                     ins >> c;
-                } while(std::isspace(c) && c != ';');
+                } while (std::isspace(c) && c != ';');
                 gamebuff.clear();
             }
             nesting++;
@@ -222,49 +232,4 @@ void SGFParser::parse(std::istringstream & strm, SGFTree * node) {
             continue;
         }
     }
-}
-
-int SGFParser::count_games_in_file(std::string filename) {
-    std::ifstream ins(filename.c_str(), std::ifstream::binary | std::ifstream::in);
-
-    if (ins.fail()) {
-        throw std::runtime_error("Error opening file");
-    }
-
-    int count = 0;
-    int nesting = 0;
-
-    char c;
-    while (ins >> c) {
-        if (!Utils::is7bit(c)) {
-            do {
-                ins >> c;
-            } while (!Utils::is7bit(c));
-            continue;
-        }
-
-        if (c == '\\') {
-            // read literal char
-            ins >> c;
-            // Skip special char parsing
-            continue;
-        }
-
-        if (c == '(') {
-            nesting++;
-        } else if (c == ')') {
-            nesting--;
-
-            assert(nesting >= 0);
-
-            if (nesting == 0) {
-                // one game processed
-                count++;
-            }
-        }
-    }
-
-    ins.close();
-
-    return count;
 }

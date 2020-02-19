@@ -1,6 +1,6 @@
 /*
     This file is part of Leela Zero.
-    Copyright (C) 2017 Gian-Carlo Pascutto
+    Copyright (C) 2017-2019 Gian-Carlo Pascutto and contributors
 
     Leela Zero is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -14,11 +14,25 @@
 
     You should have received a copy of the GNU General Public License
     along with Leela Zero.  If not, see <http://www.gnu.org/licenses/>.
+
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this Program, or any covered work, by linking or
+    combining it with NVIDIA Corporation's libraries from the
+    NVIDIA CUDA Toolkit and/or the NVIDIA CUDA Deep Neural
+    Network library and/or the NVIDIA TensorRT inference library
+    (or a modified version of those libraries), containing parts covered
+    by the terms of the respective license agreement, the licensors of
+    this Program grant you additional permission to convey the resulting
+    work.
 */
 
 #ifndef FASTSTATE_H_INCLUDED
 #define FASTSTATE_H_INCLUDED
 
+#include <cstddef>
+#include <array>
+#include <string>
 #include <vector>
 
 #include "FullBoard.h"
@@ -29,11 +43,8 @@ public:
     void reset_game();
     void reset_board();
 
-    int play_move_fast(int vertex);
-    void play_pass(void);
     void play_move(int vertex);
-
-    std::vector<int> generate_moves(int color);
+    bool is_move_legal(int color, int vertex) const;
 
     void set_komi(float komi);
     float get_komi() const;
@@ -45,15 +56,11 @@ public:
     void set_passes(int val);
     void increment_passes();
 
-    float calculate_mc_score();
-    int estimate_mc_score();
-    float final_score();
-    std::vector<int> final_score_map();
+    float final_score() const;
+    std::uint64_t get_symmetry_hash(int symmetry) const;
 
     size_t get_movenum() const;
     int get_last_move() const;
-    int get_prevlast_move() const;
-    int get_komove() const;
     void display_state();
     std::string move_to_text(int move);
 
@@ -64,8 +71,7 @@ public:
     int m_passes;
     int m_komove;
     size_t m_movenum;
-    std::array<int, 16> m_lastmove;
-    bool m_last_was_capture;
+    int m_lastmove;
 
 protected:
     void play_move(int color, int vertex);

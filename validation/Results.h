@@ -1,6 +1,6 @@
 /*
     This file is part of Leela Zero.
-    Copyright (C) 2017 Gian-Carlo Pascutto
+    Copyright (C) 2017-2018 Seth Troisi
 
     Leela Zero is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,46 +16,29 @@
     along with Leela Zero.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef TTABLE_H_INCLUDED
-#define TTABLE_H_INCLUDED
+#ifndef RESULTS_H
+#define RESULTS_H
 
-#include <vector>
+#include "SPRT.h"
+#include <QString>
 
-#include "UCTNode.h"
-#include "SMP.h"
 
-class TTEntry {
+class Results {
 public:
-    TTEntry() = default;
+    Results() = default;
+    int getGamesPlayed() const { return m_gamesPlayed; }
+    void addGameResult(Sprt::GameResult result, int side);
+    void printResults(const QString& firstNetName,
+                      const QString& secondNetName) const;
 
-    uint64 m_hash{0};
-    int m_visits;
-    double m_eval_sum;
-};
-
-class TTable {
-public:
-    /*
-        return the global TT
-    */
-    static TTable* get_TT(void);
-
-    /*
-        update corresponding entry
-    */
-    void update(uint64 hash, const float komi, const UCTNode * node);
-
-    /*
-        sync given node with TT
-    */
-    void sync(uint64 hash, const float komi, UCTNode * node);
-
+    friend QTextStream& operator<<(QTextStream& stream, const Results& r);
+    friend QTextStream& operator>>(QTextStream& stream, Results& r);
 private:
-    TTable(int size = 500000);
-
-    SMP::Mutex m_mutex;
-    std::vector<TTEntry> m_buckets;
-    float m_komi;
+    int m_gamesPlayed{0};
+    int m_blackWins{0};
+    int m_blackLosses{0};
+    int m_whiteWins{0};
+    int m_whiteLosses{0};
 };
 
-#endif
+#endif // RESULT_H

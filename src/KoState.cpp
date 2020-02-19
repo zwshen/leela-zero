@@ -1,6 +1,6 @@
 /*
     This file is part of Leela Zero.
-    Copyright (C) 2017 Gian-Carlo Pascutto
+    Copyright (C) 2017-2019 Gian-Carlo Pascutto and contributors
 
     Leela Zero is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -14,65 +14,44 @@
 
     You should have received a copy of the GNU General Public License
     along with Leela Zero.  If not, see <http://www.gnu.org/licenses/>.
+
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this Program, or any covered work, by linking or
+    combining it with NVIDIA Corporation's libraries from the
+    NVIDIA CUDA Toolkit and/or the NVIDIA CUDA Deep Neural
+    Network library and/or the NVIDIA TensorRT inference library
+    (or a modified version of those libraries), containing parts covered
+    by the terms of the respective license agreement, the licensors of
+    this Program grant you additional permission to convey the resulting
+    work.
 */
 
-#include <assert.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <string>
-#include <algorithm>
-
 #include "config.h"
-
-#include "FastState.h"
-#include "FullBoard.h"
 #include "KoState.h"
 
+#include <cassert>
+#include <algorithm>
+#include <iterator>
+
+#include "FastBoard.h"
+#include "FastState.h"
+#include "FullBoard.h"
+
 void KoState::init_game(int size, float komi) {
-    assert(size <= FastBoard::MAXBOARDSIZE);
+    assert(size <= BOARD_SIZE);
 
     FastState::init_game(size, komi);
 
-    ko_hash_history.clear();
-    hash_history.clear();
-
-    ko_hash_history.push_back(board.calc_ko_hash());
-    hash_history.push_back(board.calc_hash());
+    m_ko_hash_history.clear();
+    m_ko_hash_history.emplace_back(board.get_ko_hash());
 }
 
-bool KoState::legal_move(int vertex) {
-    if (board.get_square(vertex) != FastBoard::EMPTY) {
-        return false;
-    }
-    if (board.is_suicide(vertex, board.get_to_move())) {
-        return false;
-    }
+bool KoState::superko() const {
+    auto first = crbegin(m_ko_hash_history);
+    auto last = crend(m_ko_hash_history);
 
-    KoState tmp = *this;
-
-    tmp.play_move(vertex);
-
-    if (tmp.superko()) {
-        return false;
-    }
-
-    return true;
-}
-
-bool KoState::superko(void) {
-    auto first = crbegin(ko_hash_history);
-    auto last = crend(ko_hash_history);
-
-    auto res = std::find(++first, last, board.ko_hash);
-
-    return (res != last);
-}
-
-bool KoState::superko(uint64 newhash) {
-    auto first = crbegin(ko_hash_history);
-    auto last = crend(ko_hash_history);
-
-    auto res = std::find(first, last, newhash);
+    auto res = std::find(++first, last, board.get_ko_hash());
 
     return (res != last);
 }
@@ -80,18 +59,8 @@ bool KoState::superko(uint64 newhash) {
 void KoState::reset_game() {
     FastState::reset_game();
 
-    ko_hash_history.clear();
-    hash_history.clear();
-
-    ko_hash_history.push_back(board.calc_ko_hash());
-    hash_history.push_back(board.calc_hash());
-}
-
-void KoState::play_pass(void) {
-    FastState::play_pass();
-
-    ko_hash_history.push_back(board.ko_hash);
-    hash_history.push_back(board.hash);
+    m_ko_hash_history.clear();
+    m_ko_hash_history.push_back(board.get_ko_hash());
 }
 
 void KoState::play_move(int vertex) {
@@ -99,12 +68,8 @@ void KoState::play_move(int vertex) {
 }
 
 void KoState::play_move(int color, int vertex) {
-    if (vertex != FastBoard::PASS && vertex != FastBoard::RESIGN) {
+    if (vertex != FastBoard::RESIGN) {
         FastState::play_move(color, vertex);
-
-        ko_hash_history.push_back(board.ko_hash);
-        hash_history.push_back(board.hash);
-    } else {
-        play_pass();
     }
+    m_ko_hash_history.push_back(board.get_ko_hash());
 }
